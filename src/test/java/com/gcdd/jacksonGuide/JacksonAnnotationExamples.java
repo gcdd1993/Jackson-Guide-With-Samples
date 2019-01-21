@@ -8,6 +8,9 @@ import com.gcdd.jacksonGuide.jacksonAnnotationExamples.*;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -35,6 +38,7 @@ public class JacksonAnnotationExamples {
         MyBean bean = new MyBean(1, "My bean");
 
         String result = new ObjectMapper().writeValueAsString(bean);
+        System.out.println(result);
         assertThat(result, containsString("My bean"));
         assertThat(result, containsString("1"));
     }
@@ -44,6 +48,7 @@ public class JacksonAnnotationExamples {
         MyBean bean = new MyBean(1, "My bean");
 
         String result = new ObjectMapper().writeValueAsString(bean);
+        System.out.println(result);
         assertThat(result, containsString("My bean"));
         assertThat(result, containsString("1"));
     }
@@ -53,6 +58,7 @@ public class JacksonAnnotationExamples {
         RawBean bean = new RawBean("My bean", "{\"attr\":false}");
 
         String result = new ObjectMapper().writeValueAsString(bean);
+        System.out.println(result);
         assertThat(result, containsString("My bean"));
         assertThat(result, containsString("{\"attr\":false}"));
     }
@@ -60,6 +66,7 @@ public class JacksonAnnotationExamples {
     @Test
     public void whenSerializingUsingJsonValue_thenCorrect() throws JsonParseException, IOException {
         String enumAsString = new ObjectMapper().writeValueAsString(TypeEnumWithValue.TYPE1);
+        System.out.println(enumAsString);
         assertEquals(enumAsString, "\"Type A\"");
     }
 
@@ -71,7 +78,21 @@ public class JacksonAnnotationExamples {
         mapper.enable(SerializationFeature.WRAP_ROOT_VALUE);
         String result = mapper.writeValueAsString(user);
 
+        System.out.println(result);
         assertThat(result, containsString("John"));
         assertThat(result, containsString("user"));
+    }
+
+    @Test
+    public void whenSerializingUsingJsonSerialize_thenCorrect() throws JsonProcessingException, ParseException {
+        SimpleDateFormat df = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss");
+
+        String toParse = "20-12-2014 02:30:00";
+        Date date = df.parse(toParse);
+        Event event = new Event("party", date);
+
+        String result = new ObjectMapper().writeValueAsString(event);
+        System.out.println(result);
+        assertThat(result, containsString(toParse));
     }
 }

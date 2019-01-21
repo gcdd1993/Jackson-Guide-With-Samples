@@ -47,6 +47,16 @@ public void whenSerializingUsingJsonAnyGetter_thenCorrect() throws JsonProcessin
 }
 ```
 
+展示下输出结果:
+
+```json
+{
+    "name":"My bean",
+    "attr2":"val2",
+    "attr1":"val1"
+}
+```
+
 ## @JsonGetter
 > `@JsonGetter`注解是`@JsonProperty`注解的替代，用于将指定的方法标记为getter方法。
 
@@ -72,8 +82,18 @@ public void whenSerializingUsingJsonGetter_thenCorrect() throws JsonProcessingEx
     MyBean bean = new MyBean(1, "My bean");
 
     String result = new ObjectMapper().writeValueAsString(bean);
+    System.out.println(result);
     assertThat(result, containsString("My bean"));
     assertThat(result, containsString("1"));
+}
+```
+
+输出结果:
+
+```json
+{
+    "name":"My bean",
+    "id":1
 }
 ```
 
@@ -107,8 +127,18 @@ public void whenSerializingUsingJsonPropertyOrder_thenCorrect() throws JsonProce
     MyBean bean = new MyBean(1, "My bean");
 
     String result = new ObjectMapper().writeValueAsString(bean);
+    System.out.println(result);
     assertThat(result, containsString("My bean"));
     assertThat(result, containsString("1"));
+}
+```
+
+输出结果:
+
+```json
+{
+    "name":"My bean",
+    "id":1
 }
 ```
 
@@ -146,8 +176,20 @@ public void whenSerializingUsingJsonRawValue_thenCorrect() throws JsonProcessing
     RawBean bean = new RawBean("My bean", "{\"attr\":false}");
 
     String result = new ObjectMapper().writeValueAsString(bean);
+    System.out.println(result);
     assertThat(result, containsString("My bean"));
     assertThat(result, containsString("{\"attr\":false}"));
+}
+```
+
+输出结果:
+
+```json
+{
+    "name":"My bean",
+    "json":{
+        "attr":false
+    }
 }
 ```
 
@@ -180,8 +222,15 @@ public enum TypeEnumWithValue {
 @Test
 public void whenSerializingUsingJsonValue_thenCorrect() throws JsonParseException, IOException {
     String enumAsString = new ObjectMapper().writeValueAsString(TypeEnumWithValue.TYPE1);
+    System.out.println(enumAsString);
     assertEquals(enumAsString, "\"Type A\"");
 }
+```
+
+输出结果:
+
+```json
+"Type A"
 ```
 
 ## @JsonRootName
@@ -228,7 +277,81 @@ public void whenSerializingUsingJsonRootName_thenCorrect() throws JsonProcessing
     mapper.enable(SerializationFeature.WRAP_ROOT_VALUE);
     String result = mapper.writeValueAsString(user);
 
+    System.out.println(result);
     assertThat(result, containsString("John"));
     assertThat(result, containsString("user"));
+}
+```
+
+输出结果:
+
+```json
+{
+    "user":{
+        "id":1,
+        "name":"John"
+    }
+}
+```
+
+## @JsonSerialize
+> `@JsonSerialize`用于指示将使用自定义序列化程序来序列化实体。
+
+让我们看一个简单的例子 - 我们将使用@JsonSerialize使用CustomDateSerializer序列化eventDate属性：
+
+```java
+@AllArgsConstructor
+public class Event {
+    public String name;
+
+    @JsonSerialize(using = CustomDateSerializer.class)
+    public Date eventDate;
+}
+```
+
+这是简单的自定义Jackson序列化器：
+
+```java
+public class CustomDateSerializer extends StdSerializer<Date> {
+    private static SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss");
+
+    public CustomDateSerializer() {
+        this(null);
+    }
+
+    public CustomDateSerializer(Class<Date> t) {
+        super(t);
+    }
+
+    @Override
+    public void serialize(Date value, JsonGenerator gen, SerializerProvider arg2) throws IOException, JsonProcessingException {
+        gen.writeString(formatter.format(value));
+    }
+}
+```
+
+让我们在测试中使用它们：
+
+```java
+@Test
+public void whenSerializingUsingJsonSerialize_thenCorrect() throws JsonProcessingException, ParseException {
+    SimpleDateFormat df = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss");
+
+    String toParse = "20-12-2014 02:30:00";
+    Date date = df.parse(toParse);
+    Event event = new Event("party", date);
+
+    String result = new ObjectMapper().writeValueAsString(event);
+    System.out.println(result);
+    assertThat(result, containsString(toParse));
+}
+```
+
+输出结果:
+
+```json
+{
+    "name":"party",
+    "eventDate":"20-12-2014 02:30:00"
 }
 ```

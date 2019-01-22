@@ -1,11 +1,18 @@
 package com.gcdd.jacksonGuide;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.gcdd.jacksonGuide.jacksonAnnotationExamples.jacksonGeneralAnnotations.MyBean;
+import com.gcdd.jacksonGuide.jacksonAnnotationExamples.jacksonGeneralAnnotations.*;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.TimeZone;
 
+import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.matchers.JUnitMatchers.containsString;
@@ -29,5 +36,72 @@ public class JacksonGeneralAnnotations {
                 .readerFor(MyBean.class)
                 .readValue(result);
         assertEquals("My bean", resultBean.getTheName());
+    }
+
+    @Test
+    public void whenSerializingUsingJsonFormat_thenCorrect() throws JsonProcessingException, ParseException {
+        SimpleDateFormat df = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss");
+        df.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+        String toParse = "20-12-2014 02:30:00";
+        Date date = df.parse(toParse);
+        Event event = new Event("party", date);
+
+        String result = new ObjectMapper().writeValueAsString(event);
+
+        assertThat(result, containsString(toParse));
+    }
+
+    @Test
+    public void whenSerializingUsingJsonUnwrapped_thenCorrect() throws JsonProcessingException, ParseException {
+        UnwrappedUser.Name name = new UnwrappedUser.Name("John", "Doe");
+        UnwrappedUser user = new UnwrappedUser(1, name);
+
+        String result = new ObjectMapper().writeValueAsString(user);
+
+        assertThat(result, containsString("John"));
+        assertThat(result, not(containsString("name")));
+    }
+
+    @Test
+    public void whenSerializingUsingJsonView_thenCorrect() throws JsonProcessingException {
+        Item item = new Item(2, "book", "John");
+
+        String result = new ObjectMapper()
+                .writerWithView(Views.Public.class)
+                .writeValueAsString(item);
+        System.out.println(result);
+        assertThat(result, containsString("book"));
+        assertThat(result, containsString("2"));
+        assertThat(result, not(containsString("John")));
+    }
+
+    @Test
+    public void whenSerializingUsingJacksonReferenceAnnotation_thenCorrect() throws JsonProcessingException {
+        UserWithRef user = new UserWithRef(1, "John");
+        ItemWithRef item = new ItemWithRef(2, "book", user);
+        user.userItems = new ArrayList<>();
+        user.userItems.add(item);
+
+        String result = new ObjectMapper().writeValueAsString(item);
+
+        System.out.println(result);
+        assertThat(result, containsString("book"));
+        assertThat(result, containsString("John"));
+        assertThat(result, not(containsString("userItems")));
+    }
+
+    @Test
+    public void whenSerializingUsingJsonIdentityInfo_thenCorrect()
+            throws JsonProcessingException {
+        UserWithIdentity user = new UserWithIdentity(1, "John");
+        ItemWithIdentity item = new ItemWithIdentity(2, "book", user);
+        user.addItem(item);
+
+        String result = new ObjectMapper().writeValueAsString(item);
+
+        assertThat(result, containsString("book"));
+        assertThat(result, containsString("John"));
+        assertThat(result, containsString("userItems"));
     }
 }

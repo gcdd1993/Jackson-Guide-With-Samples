@@ -873,3 +873,215 @@ public void whenUsingJsonProperty_thenCorrect() throws IOException {
     assertEquals("My bean", resultBean.getTheName());
 }
 ```
+
+## @JsonFormat
+> `@JsonFormat`注解可用于在序列化日期/时间值时指定格式。
+  
+在下面的示例中,我们使用`@JsonFormat`来控制属性`eventDate`的日期格式:
+
+```java
+public class Event {
+    public String name;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING,
+            pattern = "dd-MM-yyyy hh:mm:ss")
+    public Date eventDate;
+}
+```
+
+下面是测试:
+
+```java
+@Test
+public void whenSerializingUsingJsonFormat_thenCorrect() throws JsonProcessingException, ParseException {
+    SimpleDateFormat df = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss");
+    df.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+    String toParse = "20-12-2014 02:30:00";
+    Date date = df.parse(toParse);
+    Event event = new Event("party", date);
+
+    String result = new ObjectMapper().writeValueAsString(event);
+
+    assertThat(result, containsString(toParse));
+}
+```
+
+## @JsonUnwrapped
+> `@JsonUnwrapped`用于定义序列化/反序列化时应解包/展平的值。
+
+让我们看看它是如何工作的,我们将使用`@JsonUnwrapped`来解包属性名称:
+
+```java
+public class UnwrappedUser {
+    public int id;
+
+    @JsonUnwrapped
+    public Name name;
+
+    public static class Name {
+        public String firstName;
+        public String lastName;
+    }
+}
+```
+
+现在让我们序列化这个类的一个实例:
+
+```java
+@Test
+public void whenSerializingUsingJsonUnwrapped_thenCorrect() throws JsonProcessingException, ParseException {
+    UnwrappedUser.Name name = new UnwrappedUser.Name("John", "Doe");
+    UnwrappedUser user = new UnwrappedUser(1, name);
+
+    String result = new ObjectMapper().writeValueAsString(user);
+
+    assertThat(result, containsString("John"));
+    assertThat(result, not(containsString("name")));
+}
+```
+
+以下是输出的样子,静态嵌套类的字段与其他字段一起展开:
+
+```json
+{
+    "id":1,
+    "firstName":"John",
+    "lastName":"Doe"
+}
+```
+
+## @JsonView
+> `@JsonView`用于指定视图，其中将包含属性以进行序列化/反序列化。
+  
+下面这个示例将准确显示其工作原理,我们将使用`@JsonView`序列化`Item`实体的实例。
+
+让我们从Views开始:
+
+```java
+public class Views {
+    public static class Public {}
+    public static class Internal extends Public {}
+}
+```
+
+现在这里是Item实体,使用Views:
+
+```java
+public class Item {
+    @JsonView(Views.Public.class)
+    public int id;
+
+    @JsonView(Views.Public.class)
+    public String itemName;
+
+    @JsonView(Views.Internal.class)
+    public String ownerName;
+}
+```
+
+最后是完整的测试:
+
+```java
+@Test
+public void whenSerializingUsingJsonView_thenCorrect() throws JsonProcessingException {
+    Item item = new Item(2, "book", "John");
+
+    String result = new ObjectMapper()
+            .writerWithView(Views.Public.class)
+            .writeValueAsString(item);
+
+    assertThat(result, containsString("book"));
+    assertThat(result, containsString("2"));
+    assertThat(result, not(containsString("John")));
+}
+```
+
+输出结果:
+
+```json
+{
+    "id":2,
+    "itemName":"book"
+}
+```
+
+## @JsonManagedReference,@JsonBackReference
+> `@JsonManagedReference`和`@JsonBackReference`注解用于处理父/子关系并解决循环问题。
+
+在下面的示例中,我们使用`@JsonManagedReference`和`@JsonBackReference`来序列化`ItemWithRef`实体:
+
+```java
+public class ItemWithRef {
+    public int id;
+    public String itemName;
+
+    @JsonManagedReference
+    public UserWithRef owner;
+}
+public class UserWithRef {
+    public int id;
+    public String name;
+
+    @JsonBackReference
+    public List<ItemWithRef> userItems;
+}
+```
+
+测试:
+
+```java
+@Test
+public void whenSerializingUsingJacksonReferenceAnnotation_thenCorrect() throws JsonProcessingException {
+    UserWithRef user = new UserWithRef(1, "John");
+    ItemWithRef item = new ItemWithRef(2, "book", user);
+    user.userItems = new ArrayList<>();
+    user.userItems.add(item);
+
+    String result = new ObjectMapper().writeValueAsString(item);
+
+    System.out.println(result);
+    assertThat(result, containsString("book"));
+    assertThat(result, containsString("John"));
+    assertThat(result, not(containsString("userItems")));
+}
+```
+
+输出结果:
+
+```json
+{
+    "id":2,
+    "itemName":"book",
+    "owner":{
+        "id":1,
+        "name":"John"
+    }
+}
+```
+
+## @JsonIdentityInfo
+> @JsonIdentityInfo用于指示在序列化/反序列化值时使用对象标识。例如，处理无限递归类型的问题。
+  
+在下面的示例中,我们有一个`ItemWithIdentity`实体，它与`UserWithIdentity`实体具有双向关系:
+
+```java
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
+public class ItemWithIdentity {
+    public int id;
+    public String itemName;
+    public UserWithIdentity owner;
+}
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
+public class UserWithIdentity {
+    public int id;
+    public String name;
+    public List<ItemWithIdentity> userItems;
+}
+```
+
+现在,让我们看看如何处理无限递归问题:
+
+```java
+
+```

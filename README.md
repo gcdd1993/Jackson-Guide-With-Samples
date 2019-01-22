@@ -4,9 +4,14 @@
 
 从事JAVA开发工作以来,一直都离不开Jackson的序列化反序列化,对于Jackson的使用也一直处于够用但不深入的状态,最近看到这篇感觉非常好的Jackson使用指南,就想着在学习的同时也翻译一遍加深印象。
 
+# 说明
+
+- 本文使用了[Lombok](https://projectlombok.org/)进行了代码简化。
+- 本文中出现的所有测试代码都进行过验证,部分进行了稍许修改。
+
 # Jackson基本序列化
 
-- [Jackson注解示例(常用)](tree/master/src/main/java/com/gcdd/jacksonGuide/jacksonAnnotationExamples)
+- [Jackson注解示例(常用)](https://github.com/gcdd1993/Jackson-Guide-With-Samples/tree/master/src/main/java/com/gcdd/jacksonGuide/jacksonAnnotationExamples)
 - Jackson序列化忽略属性
 - Jackson序列化忽略NULL
 - 更改字段名称

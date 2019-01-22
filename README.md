@@ -6,7 +6,7 @@
 
 # Jackson基本序列化
 
-- [Jackson注解示例(常用)](./tree/master/src/main/java/com/gcdd/jacksonGuide/jacksonAnnotationExamples)
+- [Jackson注解示例(常用)](tree/master/src/main/java/com/gcdd/jacksonGuide/jacksonAnnotationExamples)
 - Jackson序列化忽略属性
 - Jackson序列化忽略NULL
 - 更改字段名称

@@ -1,7 +1,9 @@
 package com.gcdd.jacksonGuide.jacksonAnnotationExamples;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 
 import java.util.Date;
 
@@ -9,10 +11,11 @@ import java.util.Date;
  * @author: gaochen
  * Date: 2019/1/21
  */
-@AllArgsConstructor
+@NoArgsConstructor
 public class Event {
     public String name;
 
-    @JsonSerialize(using = CustomDateSerializer.class)
+    //    @JsonSerialize(using = CustomDateSerializer.class)
+    @JsonDeserialize(using = CustomDateDeserializer.class)
     public Date eventDate;
 }

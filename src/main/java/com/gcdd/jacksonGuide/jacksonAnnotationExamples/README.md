@@ -355,3 +355,372 @@ public void whenSerializingUsingJsonSerialize_thenCorrect() throws JsonProcessin
     "eventDate":"20-12-2014 02:30:00"
 }
 ```
+
+# Jackson反序列化注解
+> 接下来,让我们探讨Jackson反序列化注解
+
+## @JsonCreator
+> `@JsonCreator`注解用于调整反序列化中使用的构造函数/工厂。
+
+当我们需要反序列化一些与我们需要获得的目标实体不完全匹配的JSON时，它非常有用。
+
+我们来看一个例子,例如我们需要反序列化以下JSON:
+
+```json
+{
+    "id":1,
+    "theName":"My bean"
+}
+```
+
+但是,我们的目标实体中没有theName字段,只有一个name字段。现在,我们不想更改实体本身,我们可以使用`@JsonCreator`注解构造函数并使用`@JsonProperty`注解:
+
+```java
+public class BeanWithCreator {
+    public int id;
+    public String name;
+
+    @JsonCreator
+    public BeanWithCreator(@JsonProperty("id") int id,
+                           @JsonProperty("theName") String name) {
+        this.id = id;
+        this.name = name;
+    }
+}
+```
+
+来测试下:
+
+```java
+@Test
+public void whenDeserializingUsingJsonCreator_thenCorrect() throws IOException {
+    String json = "{\"id\":1,\"theName\":\"My bean\"}";
+
+    BeanWithCreator bean = new ObjectMapper()
+            .readerFor(BeanWithCreator.class)
+            .readValue(json);
+    assertEquals("My bean", bean.name);
+}
+```
+
+## @JacksonInject
+> `@JacksonInject`用于标识将从注入而不是从JSON数据获取其值的属性。
+
+在以下示例中,我们使用`@JacksonInject`来注入属性id:
+
+```java
+public class BeanWithInject {
+    @JacksonInject
+    public int id;
+     
+    public String name;
+}
+```
+
+这是如何工作的:
+
+```java
+@Test
+public void whenDeserializingUsingJsonInject_thenCorrect() throws IOException {
+    String json = "{\"name\":\"My bean\"}";
+    InjectableValues inject = new InjectableValues.Std()
+            .addValue(int.class, 1);
+    BeanWithInject bean = new ObjectMapper().reader(inject)
+            .forType(BeanWithInject.class)
+            .readValue(json);
+
+    assertEquals("My bean", bean.name);
+    assertEquals(1, bean.id);
+}
+```
+
+## @JsonAnySetter
+> `@JsonAnySetter`允许您灵活地使用Map作为标准属性。在反序列化时，JSON中的属性将简单地添加到Map中。
+
+让我们看看它是如何工作的,我们将使用`@JsonAnySetter`来反序列化实体`ExtendableBean`:
+
+```java
+public class ExtendableBean {
+    public String name;
+    private Map<String, String> properties;
+ 
+    @JsonAnySetter
+    public void add(String key, String value) {
+        properties.put(key, value);
+    }
+}
+```
+
+这是我们需要反序列化的JSON:
+
+```json
+{
+    "name":"My bean",
+    "attr2":"val2",
+    "attr1":"val1"
+}
+```
+
+看看这一切如何联系在一起的:
+
+```java
+@Test
+public void whenDeserializingUsingJsonAnySetter_thenCorrect() throws IOException {
+    String json = "{\"name\":\"My bean\",\"attr2\":\"val2\",\"attr1\":\"val1\"}";
+
+    ExtendableBean bean = new ObjectMapper()
+            .readerFor(ExtendableBean.class)
+            .readValue(json);
+
+    assertEquals("My bean", bean.name);
+    assertEquals("val2", bean.getProperties().get("attr2"));
+}
+```
+
+## @JsonSetter
+> `@JsonSetter`是`@JsonProperty`的替代品,用于将方法标记为setter方法。
+  
+当我们需要读取一些目标实体类与该数据不完全匹配的JSON数据时,非常有用,我们可以使用`@JsonSetter`让他们能匹配起来。
+
+在下面的示例中,我们将指定方法`setTheName()`作为`MyBean`实体中`name`属性的`setter`：
+
+```java
+public class MyBean {
+    public int id;
+    private String name;
+ 
+    @JsonSetter("name")
+    public void setTheName(String name) {
+        this.name = name;
+    }
+}
+```
+
+现在,当我们需要反序列化一些JSON数据时,这非常有效：
+
+```java
+@Test
+public void whenDeserializingUsingJsonSetter_thenCorrect() throws IOException {
+    String json = "{\"id\":1,\"name\":\"My bean\"}";
+
+    MyBean bean = new ObjectMapper()
+            .readerFor(MyBean.class)
+            .readValue(json);
+    assertEquals("My bean", bean.getName());
+}
+```
+
+## @JsonDeserialize
+> @JsonDeserialize用于指示使用自定义反序列化器。
+
+让我们看看它是如何发挥作用的,我们将使用`@JsonDeserialize`并自定义`CustomDateDeserializer`进行反序列化`eventDate`属性：
+
+```java
+public class Event {
+    public String name;
+ 
+    @JsonDeserialize(using = CustomDateDeserializer.class)
+    public Date eventDate;
+}
+```
+
+这是自定义反序列化器:
+
+```java
+public class CustomDateDeserializer extends StdDeserializer<Date> {
+    private static SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss");
+
+    public CustomDateDeserializer() {
+        this(null);
+    }
+
+    public CustomDateDeserializer(Class<?> vc) {
+        super(vc);
+    }
+
+    @Override
+    public Date deserialize(JsonParser jsonparser, DeserializationContext context) throws IOException {
+        String date = jsonparser.getText();
+        try {
+            return formatter.parse(date);
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+```
+
+测试一下:
+
+```java
+@Test
+public void whenDeserializingUsingJsonDeserialize_thenCorrect() throws IOException {
+    String json = "{\"name\":\"party\",\"eventDate\":\"20-12-2014 02:30:00\"}";
+
+    SimpleDateFormat df = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss");
+    Event event = new ObjectMapper()
+            .readerFor(Event.class)
+            .readValue(json);
+
+    assertEquals("20-12-2014 02:30:00", df.format(event.eventDate));
+}
+```
+
+# Jackson属性包含注解
+
+## @JsonIgnoreProperties
+> `@JsonIgnoreProperties`是Jackson中最常见的注释之一,用于标记要在类级别忽略的属性或属性列表。
+
+让我们来看一个忽略序列化属性id的快速示例:
+
+```java
+@JsonIgnoreProperties({ "id" })
+public class BeanWithIgnore {
+    public int id;
+    public String name;
+}
+```
+
+这是测试:
+
+```java
+@Test
+public void whenSerializingUsingJsonIgnoreProperties_thenCorrect() throws JsonProcessingException {
+    BeanWithIgnore bean = new BeanWithIgnore(1, "My bean");
+    String result = new ObjectMapper()
+            .writeValueAsString(bean);
+    System.out.println(result);
+    assertThat(result, containsString("My bean"));
+    assertThat(result, not(containsString("id")));
+}
+```
+
+## @JsonIgnore
+> `@JsonIgnore`注解用于标记要在字段级别忽略的属性。
+
+让我们使用`@JsonIgnore`来忽略序列化中的属性id:
+
+```java
+public class BeanWithIgnore {
+    @JsonIgnore
+    public int id;
+ 
+    public String name;
+}
+```
+
+测试确保成功忽略了id:
+
+```java
+@Test
+public void whenSerializingUsingJsonIgnoreProperties_thenCorrect() throws JsonProcessingException {
+    BeanWithIgnore bean = new BeanWithIgnore(1, "My bean");
+    String result = new ObjectMapper()
+            .writeValueAsString(bean);
+    System.out.println(result);
+    assertThat(result, containsString("My bean"));
+    assertThat(result, not(containsString("id")));
+}
+```
+
+## @JsonIgnoreType
+> 被`@JsonIgnoreType`注解修饰的类型将忽略所有属性。
+
+让我们使用注释来标记要忽略的Name类型的所有属性:
+
+```java
+@AllArgsConstructor
+public class User {
+    public int id;
+    public Name name;
+
+    @JsonIgnoreType
+    @AllArgsConstructor
+    public static class Name {
+        public String firstName;
+        public String lastName;
+    }
+}
+```
+
+这是简单的测试，确保忽略正常工作:
+
+```java
+@Test
+public void whenSerializingUsingJsonIgnoreType_thenCorrect() throws JsonProcessingException, ParseException {
+    User.Name name = new User.Name("John", "Doe");
+    User user = new User(1, name);
+
+    String result = new ObjectMapper().writeValueAsString(user);
+    System.out.println(result);
+    
+    assertThat(result, containsString("1"));
+    assertThat(result, not(containsString("name")));
+    assertThat(result, not(containsString("John")));
+}
+```
+
+输出结果:
+
+```json
+{
+    "id":1
+}
+```
+
+## @JsonInclude
+> `@JsonInclud`e用于排除空/null/默认值的属性。
+
+让我们看一个例子,从序列化中排除空值:
+
+```java
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@AllArgsConstructor
+public class MyBean {
+    public int id;
+    public String name;
+}
+```
+
+这是完整的测试:
+
+```java
+@Test
+public void whenSerializingUsingJsonInclude_thenCorrect() throws JsonProcessingException {
+    MyBean bean = new MyBean(1, null);
+    String result = new ObjectMapper()
+            .writeValueAsString(bean);
+    System.out.println(result);
+
+    assertThat(result, containsString("1"));
+    assertThat(result, not(containsString("name")));
+}
+```
+
+## @JsonAutoDetect
+> `@JsonAutoDetect`用于改变可见级别。
+
+看一个简单的例子,让我们序列化私有属性:
+
+```java
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+public class PrivateBean {
+    private int id;
+    private String name;
+}
+```
+
+测试一下:
+
+```java
+@Test
+public void whenSerializingUsingJsonAutoDetect_thenCorrect() throws JsonProcessingException {
+    PrivateBean bean = new PrivateBean(1, "My bean");
+    String result = new ObjectMapper()
+            .writeValueAsString(bean);
+    System.out.println(result);
+
+    assertThat(result, containsString("1"));
+    assertThat(result, containsString("My bean"));
+}
+```

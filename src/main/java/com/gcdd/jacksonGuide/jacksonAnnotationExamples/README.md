@@ -724,3 +724,152 @@ public void whenSerializingUsingJsonAutoDetect_thenCorrect() throws JsonProcessi
     assertThat(result, containsString("My bean"));
 }
 ```
+
+# Jackson多态类型处理注解
+> 接下来,让我们来看看Jackson多态类型处理注解:
+
+- `@JsonTypeInfo`用于标记序列化中包含的类型信息的详细信息。
+- `@JsonSubTypes`用于标记带注解类型的子类型。
+- `@JsonTypeName`用于定义用于带注解的类的逻辑类型名称。
+
+让我们看一个稍复杂的例子,使用三个`@JsonTypeInfo`,`@JsonSubTypes`和`@JsonTypeName`来序列化/反序列化实体Zoo：
+
+```java
+@AllArgsConstructor
+public class Zoo {
+    public Animal animal;
+
+    @JsonTypeInfo(
+            use = JsonTypeInfo.Id.NAME,
+            include = JsonTypeInfo.As.PROPERTY,
+            property = "type")
+    @JsonSubTypes({
+            @JsonSubTypes.Type(value = Dog.class, name = "dog"),
+            @JsonSubTypes.Type(value = Cat.class, name = "cat")
+    })
+    @AllArgsConstructor
+    public static class Animal {
+        public String name;
+    }
+
+    @JsonTypeName("dog")
+    public static class Dog extends Animal {
+        public double barkVolume;
+
+        public Dog(String name) {
+            super(name);
+        }
+    }
+
+    @JsonTypeName("cat")
+    public static class Cat extends Animal {
+        boolean likesCream;
+        public int lives;
+
+        public Cat(String name) {
+            super(name);
+        }
+    }
+}
+```
+
+当我们进行序列化时:
+
+```java
+@Test
+public void whenSerializingPolymorphic_thenCorrect() throws JsonProcessingException {
+    Zoo.Dog dog = new Zoo.Dog("lacy");
+    Zoo zoo = new Zoo(dog);
+
+    String result = new ObjectMapper()
+            .writeValueAsString(zoo);
+    System.out.println(result);
+    
+    assertThat(result, containsString("type"));
+    assertThat(result, containsString("dog"));
+}
+```
+
+下是使用Dog序列化Zoo实例的结果:
+
+```json
+{
+    "animal":{
+        "type":"dog",
+        "name":"lacy",
+        "barkVolume":0
+    }
+}
+```
+
+现在进行反序列化,让我们从以下JSON输入开始:
+
+```json
+{
+    "animal":{
+        "name":"lacy",
+        "type":"cat"
+    }
+}
+```
+
+让我们看看它如何被反序列化到Zoo实例:
+
+```java
+@Test
+public void whenDeserializingPolymorphic_thenCorrect() throws IOException {
+    String json = "{\"animal\":{\"name\":\"lacy\",\"type\":\"cat\"}}";
+
+    Zoo zoo = new ObjectMapper()
+            .readerFor(Zoo.class)
+            .readValue(json);
+
+    assertEquals("lacy", zoo.animal.name);
+    assertEquals(Zoo.Cat.class, zoo.animal.getClass());
+}
+```
+
+# Jackson常用注解
+> 接下来,让我们讨论Jackson的一些更常见的注解。
+
+## @JsonProperty
+> `@JsonProperty`用于指定JSON中的属性名称
+
+让我们用一个简单的例子来看一下注释,当我们处理非标准的getter和setter时，使用@`JsonProperty`来指定序列化/反序列化属性名：
+
+```java
+public class MyBean {
+    public int id;
+    private String name;
+
+    @JsonProperty("name")
+    public void setTheName(String name) {
+        this.name = name;
+    }
+
+    @JsonProperty("name")
+    public String getTheName() {
+        return name;
+    }
+}
+```
+
+我们的测试:
+
+```java
+@Test
+public void whenUsingJsonProperty_thenCorrect() throws IOException {
+    MyBean bean = new MyBean();
+    bean.id = 1;
+    bean.setTheName("My bean");
+    String result = new ObjectMapper().writeValueAsString(bean);
+
+    assertThat(result, containsString("My bean"));
+    assertThat(result, containsString("1"));
+
+    MyBean resultBean = new ObjectMapper()
+            .readerFor(MyBean.class)
+            .readValue(result);
+    assertEquals("My bean", resultBean.getTheName());
+}
+```

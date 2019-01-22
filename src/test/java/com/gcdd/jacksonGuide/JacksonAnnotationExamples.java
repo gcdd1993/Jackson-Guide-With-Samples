@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.gcdd.jacksonGuide.jacksonAnnotationExamples.*;
+import com.gcdd.jacksonGuide.jacksonAnnotationExamples.jacksonPolymorphicTypeHandlingAnnotations.Zoo;
 import com.gcdd.jacksonGuide.jacksonAnnotationExamples.jacksonPropertyInclusionAnnotations.BeanWithIgnore;
 import com.gcdd.jacksonGuide.jacksonAnnotationExamples.jacksonPropertyInclusionAnnotations.PrivateBean;
 import com.gcdd.jacksonGuide.jacksonAnnotationExamples.jacksonPropertyInclusionAnnotations.User;
@@ -201,5 +202,30 @@ public class JacksonAnnotationExamples {
 
         assertThat(result, containsString("1"));
         assertThat(result, containsString("My bean"));
+    }
+
+    @Test
+    public void whenSerializingPolymorphic_thenCorrect() throws JsonProcessingException {
+//        Zoo.Dog dog = new Zoo.Dog("lacy");
+//        Zoo zoo = new Zoo(dog);
+//
+//        String result = new ObjectMapper()
+//                .writeValueAsString(zoo);
+//        System.out.println(result);
+//
+//        assertThat(result, containsString("type"));
+//        assertThat(result, containsString("dog"));
+    }
+
+    @Test
+    public void whenDeserializingPolymorphic_thenCorrect() throws IOException {
+        String json = "{\"animal\":{\"name\":\"lacy\",\"type\":\"cat\"}}";
+
+        Zoo zoo = new ObjectMapper()
+                .readerFor(Zoo.class)
+                .readValue(json);
+
+        assertEquals("lacy", zoo.animal.name);
+        assertEquals(Zoo.Cat.class, zoo.animal.getClass());
     }
 }

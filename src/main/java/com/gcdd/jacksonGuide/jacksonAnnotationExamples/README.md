@@ -297,7 +297,7 @@ public void whenSerializingUsingJsonRootName_thenCorrect() throws JsonProcessing
 ## @JsonSerialize
 > `@JsonSerialize`用于指示将使用自定义序列化程序来序列化实体。
 
-让我们看一个简单的例子 - 我们将使用@JsonSerialize使用CustomDateSerializer序列化eventDate属性：
+让我们看一个简单的例子 - 我们将使用`@JsonSerialize`使用`CustomDateSerializer`序列化`eventDate`属性：
 
 ```java
 @AllArgsConstructor

@@ -4,12 +4,12 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 
 /**
  * @author: gaochen
  * Date: 2019/1/22
  */
+@AllArgsConstructor
 public class Zoo {
     public Animal animal;
 
@@ -21,6 +21,7 @@ public class Zoo {
             @JsonSubTypes.Type(value = Dog.class, name = "dog"),
             @JsonSubTypes.Type(value = Cat.class, name = "cat")
     })
+    @AllArgsConstructor
     public static class Animal {
         public String name;
     }
@@ -29,6 +30,9 @@ public class Zoo {
     public static class Dog extends Animal {
         public double barkVolume;
 
+        public Dog(String name) {
+            super(name);
+        }
     }
 
     @JsonTypeName("cat")
@@ -36,5 +40,8 @@ public class Zoo {
         boolean likesCream;
         public int lives;
 
+        public Cat(String name) {
+            super(name);
+        }
     }
 }

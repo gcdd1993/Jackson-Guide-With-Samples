@@ -1,4 +1,4 @@
-package com.gcdd.jacksonGuide.jacksonAnnotationExamples;
+package com.gcdd.jacksonGuide.jacksonAnnotationExamples.jacksonSerializationAnnotations;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;

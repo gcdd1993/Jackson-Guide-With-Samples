@@ -1,8 +1,7 @@
-package com.gcdd.jacksonGuide.jacksonAnnotationExamples;
+package com.gcdd.jacksonGuide.jacksonAnnotationExamples.jacksonSerializationAnnotations;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.util.HashMap;
@@ -16,13 +15,12 @@ import java.util.Map;
 public class ExtendableBean {
     public String name;
     private Map<String, String> properties = new HashMap<>();
-//
-//    public ExtendableBean(String name) {
-//        this.name = name;
-//    }
 
-//    @JsonAnyGetter
-    @JsonAnySetter
+    public ExtendableBean(String name) {
+        this.name = name;
+    }
+
+    @JsonAnyGetter
     public Map<String, String> getProperties() {
         return properties;
     }

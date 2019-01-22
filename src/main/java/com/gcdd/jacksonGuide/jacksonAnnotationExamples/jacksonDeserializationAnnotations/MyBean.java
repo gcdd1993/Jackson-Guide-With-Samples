@@ -1,7 +1,6 @@
-package com.gcdd.jacksonGuide.jacksonAnnotationExamples;
+package com.gcdd.jacksonGuide.jacksonAnnotationExamples.jacksonDeserializationAnnotations;
 
 import com.fasterxml.jackson.annotation.JsonSetter;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -11,7 +10,7 @@ import lombok.NoArgsConstructor;
  */
 @Data
 @NoArgsConstructor
-public class MyBean1 {
+public class MyBean {
     public int id;
     private String name;
 

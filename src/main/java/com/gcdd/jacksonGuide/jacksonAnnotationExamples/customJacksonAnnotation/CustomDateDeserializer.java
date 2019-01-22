@@ -1,4 +1,4 @@
-package com.gcdd.jacksonGuide.jacksonAnnotationExamples;
+package com.gcdd.jacksonGuide.jacksonAnnotationExamples.customJacksonAnnotation;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;

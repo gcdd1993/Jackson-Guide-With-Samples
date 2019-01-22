@@ -1,5 +1,5 @@
 # 总览
-在本文中，我们将深入探讨Jackson注解。我们将学习到如何使用现有注解，如何创建自定义注释以及如何禁用它们。
+> 在本文中，我们将深入探讨Jackson注解。我们将学习到如何使用现有注解，如何创建自定义注释以及如何禁用它们。
 
 # Jackson序列化注解
 > 首先,让我们看一下序列化注解
@@ -7,7 +7,7 @@
 ## @JsonAnyGetter
 > `@JsonAnyGetter`注解允许使用Map字段作为标准属性。
 
-下面是一个快速入门的示例,ExtendableBean实体具有name属性和一组以键/值对形式的可扩展属性:
+下面是一个快速入门的示例,`ExtendableBean`实体具有`name`属性和一组以键/值对形式的可扩展属性:
 
 ```java
 public class ExtendableBean {
@@ -21,7 +21,7 @@ public class ExtendableBean {
 }
 ```
 
-当我们序列化这个实体的一个实例时，我们将Map中的所有键值作为标准的普通属性：
+当我们序列化这个实体的一个实例时,我们将Map中的所有键值作为标准的普通属性:
 
 ```json
 {
@@ -1083,5 +1083,222 @@ public class UserWithIdentity {
 现在,让我们看看如何处理无限递归问题:
 
 ```java
+@Test
+public void whenSerializingUsingJsonIdentityInfo_thenCorrect()
+        throws JsonProcessingException {
+    UserWithIdentity user = new UserWithIdentity(1, "John");
+    ItemWithIdentity item = new ItemWithIdentity(2, "book", user);
+    user.userItems = new ArrayList<>();
+    user.userItems.add(item);
 
+    String result = new ObjectMapper().writeValueAsString(item);
+    System.out.println(result);
+
+    assertThat(result, containsString("book"));
+    assertThat(result, containsString("John"));
+    assertThat(result, containsString("userItems"));
+}
 ```
+
+这是序列化项目和用户的完整输出:
+
+```json
+{
+    "id": 2,
+    "itemName": "book",
+    "owner": {
+        "id": 1,
+        "name": "John",
+        "userItems": [
+            2
+        ]
+    }
+}
+```
+
+## @JsonFilter
+> `@JsonFilter`注解指定序列化期间要使用的过滤器。
+
+我们来看一个例子;首先，我们定义实体，并指定过滤器:
+
+```java
+@JsonFilter("myFilter")
+public class BeanWithFilter {
+    public int id;
+    public String name;
+}
+```
+
+现在,在完整测试中,我们定义了过滤器,它排除了除序列化名称之外的所有其他属性:
+
+```java
+@Test
+public void whenSerializingUsingJsonFilter_thenCorrect()
+        throws JsonProcessingException {
+    BeanWithFilter bean = new BeanWithFilter(1, "My bean");
+
+    FilterProvider filters = new SimpleFilterProvider().addFilter(
+            "myFilter",
+            SimpleBeanPropertyFilter.filterOutAllExcept("name"));
+
+    String result = new ObjectMapper()
+            .writer(filters)
+            .writeValueAsString(bean);
+    System.out.println(result);
+
+    assertThat(result, containsString("My bean"));
+    assertThat(result, not(containsString("id")));
+}
+```
+
+输出结果:
+
+```json
+{
+    "name":"My bean"
+}
+```
+
+# 自定义Jackson注解
+> 接下来,让我们看看如何创建自定义Jackson注解
+
+我们可以使用`@JacksonAnnotationsInside`注解,如下例所示:
+
+```java
+@Retention(RetentionPolicy.RUNTIME)
+    @JacksonAnnotationsInside
+    @JsonInclude(Include.NON_NULL)
+    @JsonPropertyOrder({ "name", "id", "dateCreated" })
+    public @interface CustomAnnotation {}
+```
+
+现在，如果我们在实体上使用新注释:
+
+```java
+@CustomAnnotation
+public class BeanWithCustomAnnotation {
+    public int id;
+    public String name;
+    public Date dateCreated;
+}
+```
+
+我们可以看到它如何将现有注释组合成一个更简单的自定义注释，我们可以将其用作速记:
+
+```java
+@Test
+public void whenSerializingUsingCustomAnnotation_thenCorrect() throws JsonProcessingException {
+    BeanWithCustomAnnotation bean = new BeanWithCustomAnnotation(1, "My bean", null);
+
+    String result = new ObjectMapper().writeValueAsString(bean);
+    System.out.println(result);
+
+    assertThat(result, containsString("My bean"));
+    assertThat(result, containsString("1"));
+    assertThat(result, not(containsString("dateCreated")));
+}
+```
+
+序列化过程的输出:
+
+```json
+{
+    "name":"My bean",
+    "id":1
+}
+```
+
+# Jackson MixIn 注解
+> 接下来,让我们看看如何使用Jackson MixIn 注解。
+  
+让我们使用MixIn注解。例如,忽略User类型的属性:
+
+```java
+@AllArgsConstructor
+public class Item {
+    public int id;
+    public String itemName;
+    public User owner;
+}
+@JsonIgnoreType
+public class MyMixInForIgnoreType {
+}
+```
+
+来看看示例:
+
+```java
+@Test
+public void whenSerializingUsingMixInAnnotation_thenCorrect() throws JsonProcessingException {
+    Item item = new Item(1, "book", null);
+
+    String result = new ObjectMapper().writeValueAsString(item);
+    assertThat(result, containsString("owner"));
+    System.out.println(result);
+
+    ObjectMapper mapper = new ObjectMapper();
+    mapper.addMixIn(User.class, MyMixInForIgnoreType.class);
+
+    result = mapper.writeValueAsString(item);
+    System.out.println(result);
+    assertThat(result, not(containsString("owner")));
+}
+```
+
+输出结果:
+
+```json
+{"id":1,"itemName":"book","owner":null}
+```
+
+```json
+{"id":1,"itemName":"book"}
+```
+
+## 禁用Jackson注解
+> 最后 - 让我们看看我们如何禁用所有Jackson注解。
+
+我们可以通过禁用`MapperFeature.USE_ANNOTATIONS`来实现这一点，如下例所示:
+
+```java
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonPropertyOrder({"name", "id"})
+@AllArgsConstructor
+public class MyBean {
+    public int id;
+    public String name;
+}
+```
+
+现在，在禁用注释后，这些应该没有效果，并且应该应用库的默认值:
+
+```java
+@Test
+public void whenDisablingAllAnnotations_thenAllDisabled() throws IOException {
+    MyBean bean = new MyBean(1, null);
+
+    ObjectMapper mapper = new ObjectMapper();
+    mapper.disable(MapperFeature.USE_ANNOTATIONS);
+    String result = mapper.writeValueAsString(bean);
+    System.out.println(result);
+
+    assertThat(result, containsString("1"));
+    assertThat(result, containsString("name"));
+}
+```
+
+禁用注释之前序列化的结果:
+
+```json
+{"id":1}
+```
+
+禁用注解之后序列化的结果:
+
+```json
+{
+    "id":1,
+    "name":null
+}
+```
+

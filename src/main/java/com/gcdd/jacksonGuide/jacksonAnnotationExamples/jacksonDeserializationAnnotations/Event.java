@@ -1,8 +1,7 @@
-package com.gcdd.jacksonGuide.jacksonAnnotationExamples;
+package com.gcdd.jacksonGuide.jacksonAnnotationExamples.jacksonDeserializationAnnotations;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import lombok.AllArgsConstructor;
+import com.gcdd.jacksonGuide.jacksonAnnotationExamples.customJacksonAnnotation.CustomDateDeserializer;
 import lombok.NoArgsConstructor;
 
 import java.util.Date;
@@ -15,7 +14,6 @@ import java.util.Date;
 public class Event {
     public String name;
 
-    //    @JsonSerialize(using = CustomDateSerializer.class)
     @JsonDeserialize(using = CustomDateDeserializer.class)
     public Date eventDate;
 }

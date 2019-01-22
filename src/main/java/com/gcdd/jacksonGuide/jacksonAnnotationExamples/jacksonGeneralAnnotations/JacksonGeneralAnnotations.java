@@ -1,8 +1,10 @@
-package com.gcdd.jacksonGuide;
+package com.gcdd.jacksonGuide.jacksonAnnotationExamples.jacksonGeneralAnnotations;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.gcdd.jacksonGuide.jacksonAnnotationExamples.jacksonGeneralAnnotations.*;
+import com.fasterxml.jackson.databind.ser.FilterProvider;
+import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -20,6 +22,7 @@ import static org.junit.matchers.JUnitMatchers.containsString;
 /**
  * @author: gaochen
  * Date: 2019/1/22
+ * JacksonGeneralAnnotations test codes
  */
 public class JacksonGeneralAnnotations {
     @Test
@@ -96,12 +99,33 @@ public class JacksonGeneralAnnotations {
             throws JsonProcessingException {
         UserWithIdentity user = new UserWithIdentity(1, "John");
         ItemWithIdentity item = new ItemWithIdentity(2, "book", user);
-        user.addItem(item);
+        user.userItems = new ArrayList<>();
+        user.userItems.add(item);
 
         String result = new ObjectMapper().writeValueAsString(item);
+        System.out.println(result);
 
         assertThat(result, containsString("book"));
         assertThat(result, containsString("John"));
         assertThat(result, containsString("userItems"));
     }
+
+    @Test
+    public void whenSerializingUsingJsonFilter_thenCorrect()
+            throws JsonProcessingException {
+        BeanWithFilter bean = new BeanWithFilter(1, "My bean");
+
+        FilterProvider filters = new SimpleFilterProvider().addFilter(
+                "myFilter",
+                SimpleBeanPropertyFilter.filterOutAllExcept("name"));
+
+        String result = new ObjectMapper()
+                .writer(filters)
+                .writeValueAsString(bean);
+        System.out.println(result);
+
+        assertThat(result, containsString("My bean"));
+        assertThat(result, not(containsString("id")));
+    }
+
 }

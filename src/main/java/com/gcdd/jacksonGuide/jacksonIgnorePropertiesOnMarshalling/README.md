@@ -80,7 +80,7 @@ public void givenFieldIsIgnoredDirectly_whenDtoIsSerialized_thenCorrect() throws
 ```
 
 # 按类型忽略所有字段
-> 最后，我们可以使用`@JsonIgnoreTyp`e注释忽略指定类型的所有字段
+> 最后，我们可以使用`@JsonIgnoreType`注释忽略指定类型的所有字段
 
 如果我们控制类型，那么我们可以直接注释该类:
 
@@ -104,7 +104,7 @@ public class MyMixInForIgnoreType {}
 mapper.addMixInAnnotations(String[].class, MyMixInForIgnoreType.class);
 ```
 
-此时，将忽略所有String数组，而不是编组为JSON:
+此时，将忽略所有String数组，而不是将它们序列化为JSON:
 
 ```java
 @Test

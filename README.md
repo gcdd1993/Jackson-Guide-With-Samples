@@ -1,5 +1,8 @@
 # Jackson-Guide-With-Samples
 
+**【说明】**
+后面部分雷同的太多，所以不翻译了，写了篇总结，在这里👉 [Jackson使用指南](https://gcdd1993.github.io/%E5%B7%A5%E5%85%B7%E4%BD%BF%E7%94%A8/Jackson%E4%BD%BF%E7%94%A8%E6%8C%87%E5%8D%97/)
+
 > 翻译自[Jackson JSON Tutorial](https://www.baeldung.com/jackson)
 
 从事JAVA开发工作以来,一直都离不开Jackson的序列化反序列化,对于Jackson的使用也一直处于够用但不深入的状态,最近看到这篇感觉非常好的Jackson使用指南,就想着在学习的同时也翻译一遍加深印象。
